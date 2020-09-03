@@ -1,0 +1,4 @@
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  version: v1
+  stackName: ${self:service}-${self:custom.stage}-${self:custom.version}
