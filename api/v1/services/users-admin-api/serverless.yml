@@ -65,3 +65,54 @@ resources:
               Ref: CognitoUserPoolClient
             ProviderName:
               Fn::GetAtt: [CognitoUserPool, ProviderName]
+
+    # IAM roles
+    CognitoIdentityPoolRoles:
+      Type: AWS::Cognito::IdentityPoolRoleAttachment
+      Properties:
+        IdentityPoolId:
+          Ref: CognitoIdentityPool
+        Roles:
+          authenticated:
+            Fn::GetAtt: [CognitoAuthRole, Arn]
+
+    #IAM role used for authenticated users
+    CognitoAuthRole:
+      Type: AWS::IAM::Role
+      Properties:
+        Description: 'IAM role used for authenticated users.'
+        Path: /
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Principal:
+                Federated: 'cognito-identity.amazonaws.com'
+              Action:
+                - 'sts:AssumeRoleWithWebIdentity'
+              Condition:
+                StringEquals:
+                  'cognito-identity.amazonaws.com:aud':
+                    Ref: CognitoIdentityPool
+                'ForAnyValue:StringLike':
+                  'cognito-identity.amazonaws.com:amr': authenticated
+        Policies:
+          - PolicyName: 'CognitoAuthorizedPolicy'
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: 'Allow'
+                  Action:
+                    - 'mobileanalytics:PutEvents'
+                    - 'cognito-sync:*'
+                    - 'cognito-identity:*'
+                  Resource: '*'
+
+    CognitoUserPoolDomain:
+      Type: AWS::Cognito::UserPoolDomain
+      Properties:
+        CustomDomainConfig:
+          CertificateArn: ${env:COGNITO_USER_POOL_DOMAIN_CERTIFICATE}
+        Domain: ${env:COGNITO_USER_POOL_DOMAIN}
+        UserPoolId:
+          Ref: CognitoUserPool
