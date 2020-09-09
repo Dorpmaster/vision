@@ -9,6 +9,7 @@ plugins:
   - serverless-bundle
   - serverless-offline
   - serverless-dotenv-plugin
+  - serverless-pseudo-parameters
 
 provider:
   name: aws
@@ -21,13 +22,13 @@ provider:
   # the following line. Also, make sure to not
   # commit your .env.
   #
-  #environment:
-  #  SAMPLE_ENV_VAR: ${env:SAMPLE_ENV_VAR}
+#  environment:
 
 functions:
   users-list:
     name: ${self:custom.stackName}-users-list
     handler: users-list.main
+    role: LambdaUsersListRole
     events:
       - http:
           path: v1/admin/users
@@ -61,10 +62,8 @@ resources:
         IdentityPoolName: ${self:custom.stackName}-identity-pool
         AllowUnauthenticatedIdentities: false
         CognitoIdentityProviders:
-          - ClientId:
-              Ref: CognitoUserPoolClient
-            ProviderName:
-              Fn::GetAtt: [CognitoUserPool, ProviderName]
+          - ClientId: '#{CognitoUserPoolClient}'
+            ProviderName: '#{CognitoUserPool.ProviderName}'
 
     # IAM roles
     CognitoIdentityPoolRoles:
@@ -73,8 +72,7 @@ resources:
         IdentityPoolId:
           Ref: CognitoIdentityPool
         Roles:
-          authenticated:
-            Fn::GetAtt: [CognitoAuthRole, Arn]
+          authenticated: '#{CognitoAuthRole.Arn}'
 
     #IAM role used for authenticated users
     CognitoAuthRole:
@@ -92,8 +90,7 @@ resources:
                 - 'sts:AssumeRoleWithWebIdentity'
               Condition:
                 StringEquals:
-                  'cognito-identity.amazonaws.com:aud':
-                    Ref: CognitoIdentityPool
+                  'cognito-identity.amazonaws.com:aud': '#{CognitoIdentityPool}'
                 'ForAnyValue:StringLike':
                   'cognito-identity.amazonaws.com:amr': authenticated
         Policies:
@@ -107,6 +104,37 @@ resources:
                     - 'cognito-sync:*'
                     - 'cognito-identity:*'
                   Resource: '*'
+
+    #IAM role used for the "users-list" function
+    LambdaUsersListRole:
+      Type: AWS::IAM::Role
+      Properties:
+        Description: 'IAM role used for the "users-list" function'
+        Path: /
+        RoleName: ${self:custom.stackName}-users-list-lambdaRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Principal:
+                Service: 'lambda.amazonaws.com'
+              Action:
+                - 'sts:AssumeRole'
+        Policies:
+          - PolicyName: ${self:custom.stackName}-users-list-lambda
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: 'Allow'
+                  Action:
+                    - logs:CreateLogStream
+                    - logs:CreateLogGroup
+                    - logs:PutLogEvents
+                  Resource: 'arn:aws:logs:#{AWS::Region}:#{AWS::AccountId}:log-group:/aws/lambda/${self:custom.stackName}-users-list:*:*'
+                - Effect: 'Allow'
+                  Action:
+                    - cognito-idp:ListUsers
+                  Resource: '#{CognitoUserPool.Arn}'
 
     CognitoUserPoolDomain:
       Type: AWS::Cognito::UserPoolDomain
