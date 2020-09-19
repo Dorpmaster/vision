@@ -2,7 +2,7 @@
   "name": "vision-user-admin-api-v1",
   "version": "1.0.0",
   "description": "Vision Project",
-  "main": "services/users-admin-api/handler.js",
+  "main": "services/users-admin-api/users-list.js",
   "scripts": {
     "test": "serverless-bundle test"
   },
@@ -10,14 +10,24 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AnomalyInnovations/serverless-nodejs-starter.git"
+    "url": "https://github.com/Dorpmaster/vision.git"
   },
   "devDependencies": {
     "aws-sdk": "^2.744.0",
     "serverless-bundle": "^2.0.0",
     "serverless-dotenv-plugin": "^2.1.1",
-    "serverless-offline": "^5.3.3",
+    "serverless-offline": "^6.7.0",
     "serverless-pseudo-parameters": "^2.5.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@middy/core": "^1.4.0",
+    "@middy/do-not-wait-for-empty-event-loop": "^1.4.0",
+    "@middy/http-content-negotiation": "^1.4.0",
+    "@middy/http-cors": "^1.4.0",
+    "@middy/http-error-handler": "^1.4.0",
+    "@middy/http-event-normalizer": "^1.4.0",
+    "@middy/http-header-normalizer": "^1.4.0",
+    "http-errors": "^1.8.0",
+    "middy-jsonapi": "^0.2.3"
+  }
 }
