@@ -2,3 +2,9 @@ custom:
   stage: ${opt:stage, self:provider.stage}
   version: v1
   stackName: ${self:service}-${self:custom.stage}-${self:custom.version}
+  serverless-offline:
+    # Eliminates "Failure: Cannot read property 'defineService' of undefined".
+    allowCache: true
+    # Eliminates "Serverless-Webpack watching for changes not working"
+    # Bui it breaks the debugger.
+    useChildProcesses: true

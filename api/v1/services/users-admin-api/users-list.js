@@ -1,3 +1,4 @@
+import 'source-map-support/register';
 import jsonApiResponse from '../../libs/response-lib';
 import AWS from 'aws-sdk';
 import middy from '@middy/core';
@@ -8,13 +9,15 @@ import httpEventNormalizer from '@middy/http-event-normalizer';
 import httpHeaderNormalizer from '@middy/http-header-normalizer';
 import jsonApiFormatter from '../../middleware/jsonapi';
 import cors from '@middy/http-cors';
+import _ from 'lodash';
 
 const provider = new AWS.CognitoIdentityServiceProvider();
 
 export const main = middy(async (event, context) => {
   const listUsersRequest = {
     UserPoolId: process.env.USER_POOL_ID,
-    Limit: 10,
+    Limit: 2,
+    // PaginationToken: '',
   };
 
   const users = await provider.listUsers(listUsersRequest).promise();
@@ -27,8 +30,14 @@ export const main = middy(async (event, context) => {
     users.Users.forEach(user => {
       data.push({
         type: 'users',
-        id: user.Username,
-        attributes: user.Attributes,
+        id: _.find(user.Attributes, {Name: 'sub'}).Value,
+        attributes: {
+          email: _.find(user.Attributes, {Name: 'email'}).Value,
+          enabled: user.Enabled,
+          status: user.UserStatus,
+          createdAt: user.UserCreateDate,
+          changedAt: user.UserLastModifiedDate
+        },
       });
     });
   }
@@ -37,6 +46,8 @@ export const main = middy(async (event, context) => {
 }).use(doNotWaitForEmptyEventLoop())
   .use(httpEventNormalizer())
   .use(httpHeaderNormalizer())
-  .use(jsonApiFormatter())
+  .use(jsonApiFormatter({
+    allowedFields: {}
+  }))
   .use(httpErrorHandler())
   .use(cors({credentials: true}));
