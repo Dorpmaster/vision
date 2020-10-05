@@ -1,7 +1,9 @@
-export default (data, meta) => {
+export default ({data = [], meta = {}, links = {}, included = []}) => {
   const body = {
-    data: data,
-    meta: meta || {},
+    data,
+    meta,
+    links,
+    included,
   };
   return apiGetawayResponse(200, body);
 };

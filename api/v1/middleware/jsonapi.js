@@ -29,6 +29,8 @@ const responseFormatter = async handler => {
       now: new Date().toISOString(),
     },
     data: [],
+    links: {},
+    included: [],
   };
 
   const responseBody = handler.response.body;
@@ -47,6 +49,22 @@ const responseFormatter = async handler => {
 
   if (responseBody.data) {
     handler.response.body.data = responseBody.data;
+  }
+
+  if(responseBody.links) {
+    handler.response.body.links = responseBody.links;
+  }
+
+  if(_.isEmpty(handler.response.body.links)) {
+    delete(handler.response.body.links);
+  }
+
+  if(responseBody.included) {
+    handler.response.body.included = responseBody.included;
+  }
+
+  if(_.isEmpty(handler.response.body.included)) {
+    delete(handler.response.body.included);
   }
 
   handler.response.body = JSON.stringify(handler.response.body);

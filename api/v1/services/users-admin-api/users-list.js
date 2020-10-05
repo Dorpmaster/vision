@@ -42,7 +42,7 @@ export const main = middy(async (event, context) => {
     });
   }
 
-  return jsonApiResponse(data, meta);
+  return jsonApiResponse({data, meta});
 }).use(doNotWaitForEmptyEventLoop())
   .use(httpEventNormalizer())
   .use(httpHeaderNormalizer())
