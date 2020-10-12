@@ -2,7 +2,6 @@ import 'source-map-support/register';
 import jsonApiResponse from '../../libs/response-lib';
 import AWS from 'aws-sdk';
 import middy from '@middy/core';
-import httpErrorHandler from '@middy/http-error-handler';
 import doNotWaitForEmptyEventLoop
   from '@middy/do-not-wait-for-empty-event-loop';
 import httpEventNormalizer from '@middy/http-event-normalizer';
@@ -49,5 +48,4 @@ export const main = middy(async (event, context) => {
   .use(jsonApiFormatter({
     allowedFields: {}
   }))
-  .use(httpErrorHandler())
   .use(cors({credentials: true}));

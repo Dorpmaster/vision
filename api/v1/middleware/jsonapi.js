@@ -6,13 +6,7 @@ const defaults = {
   allowedFields: {},
 };
 
-const responseFormatter = async handler => {
-  handler.response = handler.response || {
-    statusCode: 200,
-    body: {},
-    headers: {},
-  };
-
+const addContentTypeHeader = handler => {
   handler.response.headers = Object.assign(
       {},
       {
@@ -20,6 +14,16 @@ const responseFormatter = async handler => {
       },
       handler.response.headers,
   );
+}
+
+const responseFormatter = async handler => {
+  handler.response = handler.response || {
+    statusCode: 200,
+    body: {},
+    headers: {},
+  };
+
+  addContentTypeHeader(handler);
 
   const body = {
     jsonapi: {version: '1.0'},
@@ -51,20 +55,20 @@ const responseFormatter = async handler => {
     handler.response.body.data = responseBody.data;
   }
 
-  if(responseBody.links) {
+  if (responseBody.links) {
     handler.response.body.links = responseBody.links;
   }
 
-  if(_.isEmpty(handler.response.body.links)) {
-    delete(handler.response.body.links);
+  if (_.isEmpty(handler.response.body.links)) {
+    delete (handler.response.body.links);
   }
 
-  if(responseBody.included) {
+  if (responseBody.included) {
     handler.response.body.included = responseBody.included;
   }
 
-  if(_.isEmpty(handler.response.body.included)) {
-    delete(handler.response.body.included);
+  if (_.isEmpty(handler.response.body.included)) {
+    delete (handler.response.body.included);
   }
 
   handler.response.body = JSON.stringify(handler.response.body);
@@ -133,7 +137,55 @@ const requestProcessor = async (config, handler) => {
   }
 };
 
+const errorFormatter = async handler => {
+  handler.response = handler.response || {
+    statusCode: 500,
+    body: {},
+    headers: {},
+  };
+
+  addContentTypeHeader(handler);
+
+  const body = {
+    jsonapi: {version: '1.0'},
+    errors: [
+      {
+        status: '500',
+        title: 'Internal Server Error',
+        detail: 'Please contact the author and provide `X-Request-ID` value.',
+      },
+    ],
+  };
+
+  const responseBody = handler.response.body;
+
+  handler.response.body = Object.assign({}, body, responseBody);
+
+  if (responseBody.jsonapi) {
+    handler.response.body.jsonapi = Object.assign({}, body.jsonapi,
+        responseBody.jsonapi);
+  }
+
+  if (responseBody.meta) {
+    handler.response.body.meta = responseBody.meta;
+  }
+
+  if (handler.error instanceof createError.HttpError) {
+    handler.response.statusCode = handler.error.statusCode;
+    handler.response.body.errors = [
+      {
+        status: handler.error.statusCode.toString(),
+        title: handler.error.name,
+        detail: handler.error.message,
+      }
+    ];
+  }
+
+  handler.response.body = JSON.stringify(handler.response.body);
+};
+
 export default (config) => ({
   before: requestProcessor.bind(null, config),
   after: responseFormatter,
+  onError: errorFormatter,
 });
